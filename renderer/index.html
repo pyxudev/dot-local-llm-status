@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src http://localhost:11434 ws://localhost:8765;">
+<title>Ollama Desktop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+JP:wght@300;400;700&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── TITLEBAR ── -->
+<div id="titlebar">
+  <div id="traffic-lights">
+    <span class="tl tl-red"></span>
+    <span class="tl tl-yellow"></span>
+    <span class="tl tl-green"></span>
+  </div>
+  <h1 id="app-title">⚡ OLLAMA DESKTOP</h1>
+  <div id="title-right">
+    <span id="connection-badge" class="badge badge-demo">● DEMO</span>
+    <!-- 言語切り替え -->
+    <div id="lang-switcher">
+      <button class="lang-btn active" data-lang="ja">日</button>
+      <button class="lang-btn"        data-lang="zh">中</button>
+      <button class="lang-btn"        data-lang="en">EN</button>
+    </div>
+    <span id="version-badge" class="version-text">v1.0.0</span>
+  </div>
+</div>
+
+<!-- ── MAIN LAYOUT ── -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <section class="sb-section">
+      <div class="sb-label" data-i18n="system">SYSTEM</div>
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-val" id="mc-models">0</div>
+          <div class="metric-lbl" data-i18n="models">モデル数</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val accent-pink" id="mc-active">0</div>
+          <div class="metric-lbl" data-i18n="active">稼働中</div>
+        </div>
+        <div class="metric-card span2">
+          <div class="metric-val accent-gold" id="mc-cpu">--%</div>
+          <div class="metric-lbl">CPU</div>
+        </div>
+        <div class="metric-card span2">
+          <div class="metric-val accent-green" id="mc-mem">-- MB</div>
+          <div class="metric-lbl" data-i18n="memory">Memory</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODEL LIST -->
+    <section class="sb-section" style="flex:1;overflow:hidden;display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="sb-label" style="margin-bottom:0" data-i18n="modelsLabel">MODELS</div>
+        <button id="btn-regen-all" class="regen-btn regen-all-btn" data-i18n-title="regenAllTitle">
+          ↺ <span data-i18n="regenAll">全再生成</span>
+        </button>
+      </div>
+      <div id="model-list"></div>
+    </section>
+
+    <!-- INFO -->
+    <section class="sb-section">
+      <div class="sb-label" data-i18n="info">INFO</div>
+      <div id="info-block">
+        <div class="info-row"><span class="info-k" data-i18n="platform">Platform</span><span id="inf-platform" class="info-v">--</span></div>
+        <div class="info-row"><span class="info-k" data-i18n="updated">Updated</span> <span id="inf-updated"  class="info-v">--</span></div>
+        <div class="info-row"><span class="info-k" data-i18n="uptime">Uptime</span>  <span id="inf-uptime"   class="info-v">--</span></div>
+        <div class="info-row" id="profiles-path-row" style="display:none">
+          <span class="info-k" style="color:#444" data-i18n="cache">Cache</span>
+          <span id="inf-profiles-path" class="info-v" style="font-size:8px;word-break:break-all;color:#444">--</span>
+        </div>
+      </div>
+    </section>
+  </aside>
+
+  <!-- OFFICE SCENE -->
+  <main id="office-container">
+    <div id="office-scene">
+      <div class="o-window" style="left:50px">  <div class="win-shine"></div></div>
+      <div class="o-window" style="left:170px"> <div class="win-shine"></div></div>
+      <div class="o-window" style="right:170px"><div class="win-shine"></div></div>
+      <div class="o-window" style="right:50px"> <div class="win-shine"></div></div>
+
+      <div id="chars"></div>
+      <div id="floor"></div>
+      <div id="scanlines"></div>
+
+      <!-- connection overlay -->
+      <div id="connect-overlay" class="hidden">
+        <div class="co-inner">
+          <div class="co-pixel-icon">⚡</div>
+          <div class="co-msg" data-i18n="connecting">Ollamaに接続中...</div>
+          <div class="co-sub" data-i18n="connectSub">ollama serve が起動しているか確認してください</div>
+        </div>
+      </div>
+
+      <!-- interview overlay -->
+      <div id="scan-overlay" class="hidden">
+        <div class="scan-title" data-i18n="interviewTitle">💬 自己紹介タイム</div>
+        <div class="scan-progress"><div class="scan-bar" id="scan-bar"></div></div>
+        <div class="scan-sub" id="scan-sub"></div>
+      </div>
+    </div>
+
+    <!-- LOG -->
+    <div id="log-bar">
+      <div id="log-scroll"></div>
+    </div>
+  </main>
+</div>
+
+<!-- ── CONTEXT MENU ── -->
+<div id="ctx-menu" class="ctx-menu hidden">
+  <div class="ctx-header" id="ctx-model-name">model</div>
+  <div class="ctx-item" id="ctx-regen">
+    <span class="ctx-icon">↺</span> <span data-i18n="ctxRegen">このアバターを再生成</span>
+  </div>
+  <div class="ctx-item ctx-item-danger" id="ctx-delete">
+    <span class="ctx-icon">✕</span> <span data-i18n="ctxDelete">キャッシュを削除</span>
+  </div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item ctx-item-dim" id="ctx-generated-at"></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
